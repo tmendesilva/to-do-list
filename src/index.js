@@ -11,7 +11,9 @@ class App extends React.Component {
         super(props);
         this.state = {
             value: '',
-            items: []
+            items: [],
+            orderByAsc: true,
+            showAll: true
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
@@ -24,7 +26,8 @@ class App extends React.Component {
             elements.push({
                 task: value,
                 completed: false,
-                createdAt: Date.now()
+                createdAt: Date.now(),
+                show: true
             });
             this.setState({items: elements, value: ''});
         }
@@ -39,6 +42,10 @@ class App extends React.Component {
     componentWillMount(){
         if(localStorage.getItem('elements'))
             this.setState({items: JSON.parse(localStorage.getItem('elements'))});
+        if(localStorage.getItem('orderByAsc'))
+            this.setState({orderByAsc: localStorage.getItem('orderByAsc')});
+        if(localStorage.getItem('showAll'))
+            this.setState({showAll: localStorage.getItem('showAll')});
     }
 
     // Storage
@@ -68,6 +75,34 @@ class App extends React.Component {
         }
     }
 
+    toggleOrderBy(orderByAsc){
+        const newState = JSON.parse(localStorage.getItem('elements'));
+        newState.sort(function(a,b) {
+            if(orderByAsc)
+                return b.createdAt < a.createdAt;
+            else
+                return a.createdAt < b.createdAt;
+        });
+        localStorage.setItem('orderByAsc', orderByAsc);
+        this.setState({orderByAsc: localStorage.getItem('orderByAsc')});
+        localStorage.setItem('elements', JSON.stringify(newState));
+        this.setState({items: JSON.parse(localStorage.getItem('elements'))});
+    }
+
+    toggleShow(showAll) {
+        const newState = JSON.parse(localStorage.getItem('elements'));
+        newState.map(function(e){
+            if(!showAll && !e.completed)
+                e.show = false;
+            else
+                e.show = true;
+        });
+        localStorage.setItem('showAll', showAll);
+        this.setState({showAll: localStorage.getItem('showAll')});
+        localStorage.setItem('elements', JSON.stringify(newState));
+        this.setState({items: JSON.parse(localStorage.getItem('elements'))});
+    }
+
     render() {
         return (
             <div className="container mt-2">
@@ -78,26 +113,27 @@ class App extends React.Component {
                             <div className="form-group">
                                 <div className="input-group">
                                     <input autoFocus type="text" value={this.state.value} className='form-control'
-                                           placeholder='New Task' onChange={this.handleChange}/>
+                                           placeholder='New task...' onChange={this.handleChange}/>
                                 </div>
                             </div>
                             <button type="submit" className='d-none'/>
                         </form>
                         <table className="table table-hover table-sm">
                             <thead>
-                                <tr>
-                                    <th scope="col">Task</th>
-                                    <th scope="col" className='w-25 text-center'>Actions</th>
-                                </tr>
+                            <tr>
+                                <th scope="col">Task</th>
+                                <th scope="col" className='w-25 text-center'>Actions</th>
+                            </tr>
                             </thead>
                             <tbody>
                             {
                                 this.state.items.map(item =>
-                                    <tr key={item.createdAt} className={(item.completed ? "table-active" : "table-default")}>
+                                    <tr key={item.createdAt} className={(item.completed ? "table-active" : "table-default") +
+                                            (item.show ? " d-table-row" : " d-none")}>
                                         <td className={"align-middle pl-3" + (item.completed ? " text-muted" : "")}>
                                             {(item.completed ? <s>{item.task}</s> : item.task)}
                                         </td>
-                                        <td className="text-center">
+                                        <td className="text-center text-nowrap">
                                             <button type="button"
                                                     className={"mr-2 btn-toggle btn btn-sm btn-" + (item.completed ? "warning" : "success")}
                                                     title={(item.completed ? "Incomplete" : "Complete")}
@@ -117,6 +153,44 @@ class App extends React.Component {
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <div className="row">
+                    <div className="col-md-6 text-center">
+                        <h5>Order by date</h5>
+                        <button type="button"
+                                className="btn btn-sm mr-2"
+                                title="Ascending"
+                                // disabled={this.state.orderByAsc}
+                                onClick={this.toggleOrderBy.bind(this, true)}
+                        >Ascending
+                        </button>
+                        <button type="button"
+                                className="btn btn-sm"
+                                title="Descending"
+                                // disabled={!this.state.orderByAsc}
+                                onClick={this.toggleOrderBy.bind(this, false)}
+                        >Descending
+                        </button>
+                    </div>
+                    <div className="col-md-6 text-center">
+                        <h5>Show</h5>
+                        <button type="button"
+                                className="btn btn-sm mr-2"
+                                title="All"
+                                // disabled={this.state.orderByAsc}
+                                onClick={this.toggleShow.bind(this, true)}
+                        >All
+                        </button>
+                        <button type="button"
+                                className="btn btn-sm"
+                                title="Completed"
+                                // disabled={this.state.orderByAsc}
+                                onClick={this.toggleShow.bind(this, false)}
+                        >Completed
+                        </button>
+                    </div>
+
                 </div>
             </div>
         )
